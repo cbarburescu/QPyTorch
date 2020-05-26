@@ -1,3 +1,4 @@
+import pdb
 import torch
 from torch.optim import Optimizer, SGD, Adam
 
@@ -75,6 +76,9 @@ class OptimLP(Optimizer):
         if not self.grad_quant is None:
             for group in self.param_groups:
                 for p in group["params"]:
+                    # if p.grad is None:
+                        # continue
+                    # pdb.set_trace()
                     p.grad.data = self.grad_quant(p.grad.data * self.grad_scaling)
 
         # switch acc into weight before stepping

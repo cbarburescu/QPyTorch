@@ -159,6 +159,9 @@ def quantizer(
                 if forward_number == None:
                     return x
 
+                if forward_number.bias != 0:
+                    x = torch.mul(x, 2 ** forward_number.bias)
+
                 quant_module = get_module(x)
                 out = forward_quant(x.contiguous(), quant_module)
 
@@ -263,7 +266,7 @@ def block_quantize(x, wl, dim=-1, rounding="stochastic"):
     return out
 
 
-def float_quantize(x, exp, man, rounding="stochastic"):
+def float_quantize(x, exp, man, bias=0, rounding="stochastic"):
     """
     Quantize a single precision Floating Point into low-precision Floating Point
 
@@ -278,6 +281,8 @@ def float_quantize(x, exp, man, rounding="stochastic"):
     """
     assert isinstance(x, torch.Tensor), "x is not a single precision Floating Point Tensor"
     assert rounding in ["stochastic", "nearest"], "invalid rounding mode, {}".format(rounding)
+    if bias != 0:
+        x = torch.mul(x, 2 ** bias)
     quant_module = get_module(x)
     if rounding == "nearest":
         out = quant_module.float_quantize_nearest(x.contiguous(), man, exp)

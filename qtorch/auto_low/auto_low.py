@@ -147,13 +147,17 @@ def _get_apply_lower_func(quant, layer_types=[]):
     return _insert_LP_layer
 
 
-def _get_return_sequential_lower_func(quant, layer_types=[]):
+def _get_return_sequential_lower_func(quant, layer_types=[], except_layers=[]):
+    for x in except_layers:
+        assert isinstance(x, int)
     def _insert_LP_layer(module):
         """Insert quant layer for all layers so long as in layer_types
         """
+
         if type(module) in SEQUENTIAL_LAYERS:
             for i, sub_module in enumerate(module.children()):
-                module[i] = _insert_LP_layer(module[i])
+                if i not in except_layers:
+                    module[i] = _insert_LP_layer(module[i])
             return module
         elif type(module) in DICT_LAYERS:
             for key, sub_module in module.items():
@@ -197,6 +201,7 @@ def lower(
 def sequential_lower(
     model,
     layer_types=[],
+    except_layers=[],
     forward_number=None,
     backward_number=None,
     forward_rounding="stochastic",
@@ -208,7 +213,7 @@ def sequential_lower(
         forward_number, backward_number, forward_rounding, backward_rounding
     )
 
-    lower_func = _get_return_sequential_lower_func(quant, layer_types=layer_types)
+    lower_func = _get_return_sequential_lower_func(quant, layer_types=layer_types, except_layers=except_layers)
     return lower_func(copy.deepcopy(model))
 
 
