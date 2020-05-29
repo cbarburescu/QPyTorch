@@ -282,5 +282,5 @@ def float_quantize(x, exp, man, bias=0, rounding="stochastic"):
     if rounding == "nearest":
         out = quant_module.float_quantize_nearest(x.contiguous(), man, exp, bias)
     elif rounding == "stochastic":
-        out = quant_module.float_quantize_stochastic(x.contiguous(), man, bias)
+        out = quant_module.float_quantize_stochastic(x.contiguous(), man, exp, bias)
     return out
