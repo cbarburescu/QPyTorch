@@ -1,6 +1,6 @@
-python train.py --dataset CIFAR10 \
-                --data_path ./data \
-                --model PreResNet20LP \
+python train.py --dataset IMAGENET12 \
+                --data_path /data \
+                --model PreResNet110LP \
                 --epochs=200 \
                 --lr_init=0.05 \
                 --wd=5e-4 \
@@ -22,4 +22,4 @@ python train.py --dataset CIFAR10 \
                 --activate-exp 5 \
                 --error-exp 5 \
                 --acc-exp 6 \
-                --batch_size 128;
+                --batch_size 64;

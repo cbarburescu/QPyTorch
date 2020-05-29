@@ -88,6 +88,7 @@ class FloatingPoint(Number):
         - :attr: `exp`: number of bits allocated for exponent
         - :attr: `man`: number of bits allocated for mantissa, referring to number of bits that are
                         supposed to be stored on hardware (not counting the virtual bits).
+        - :attr: `bias`: number of bias bits for the exponent as described in https://papers.nips.cc/paper/8736-hybrid-8-bit-floating-point-hfp8-training-and-inference-for-deep-neural-networks.pdf section 2.1
     """
 
     def __init__(self, exp, man, bias=0):

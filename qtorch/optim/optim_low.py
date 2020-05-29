@@ -67,19 +67,21 @@ class OptimLP(Optimizer):
                 for p in group["params"]:
                     self.weight_acc[p] = p.detach().clone()
 
-    def step(self, closure=None):
+    def step(self, loss_scale=None, closure=None):
         """
         Performs one step of optimization with the underlying optimizer.
         Quantizes gradient and momentum before stepping. Quantizes gradient accumulator and weight after stepping.
         """
         # quantize gradient
         if not self.grad_quant is None:
+            if loss_scale is None:
+                grad_scaling = self.grad_scaling
+            else:
+                grad_scaling = 1 / loss_scale
             for group in self.param_groups:
                 for p in group["params"]:
-                    # if p.grad is None:
-                        # continue
-                    # pdb.set_trace()
-                    p.grad.data = self.grad_quant(p.grad.data * self.grad_scaling)
+                    # p.grad.data = self.grad_quant(p.grad.data * grad_scaling)
+                    p.grad.data = self.grad_quant(p.grad.data) * grad_scaling
 
         # switch acc into weight before stepping
         if not self.acc_quant is None:

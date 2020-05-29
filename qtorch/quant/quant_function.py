@@ -93,7 +93,7 @@ def quantizer(
                 )
             elif type(forward_number) == FloatingPoint:
                 forward_quant = lambda x, quant_module: quant_module.float_quantize_nearest(
-                    x, forward_number.man, forward_number.exp
+                    x, forward_number.man, forward_number.exp, forward_number.bias
                 )
         elif forward_rounding == "stochastic":
             if type(forward_number) == BlockFloatingPoint:
@@ -106,7 +106,7 @@ def quantizer(
                 )
             elif type(forward_number) == FloatingPoint:
                 forward_quant = lambda x, quant_module: quant_module.float_quantize_stochastic(
-                    x, forward_number.man, forward_number.exp
+                    x, forward_number.man, forward_number.exp, forward_number.bias
                 )
     else:
         if type(forward_number) == FixedPoint or forward_number == None:
@@ -135,7 +135,7 @@ def quantizer(
             )
         elif type(backward_number) == FloatingPoint:
             backward_quant = lambda a, quant_module: quant_module.float_quantize_nearest(
-                a, backward_number.man, backward_number.exp
+                a, backward_number.man, backward_number.exp, backward_number.bias
             )
     elif backward_rounding == "stochastic":
         if type(backward_number) == BlockFloatingPoint:
@@ -148,7 +148,7 @@ def quantizer(
             )
         elif type(backward_number) == FloatingPoint:
             backward_quant = lambda a, quant_module: quant_module.float_quantize_stochastic(
-                a, backward_number.man, backward_number.exp
+                a, backward_number.man, backward_number.exp, backward_number.bias
             )
 
     if clamping_grad_zero == False:
@@ -158,9 +158,6 @@ def quantizer(
             def forward(self, x):
                 if forward_number == None:
                     return x
-
-                if forward_number.bias != 0:
-                    x = torch.mul(x, 2 ** forward_number.bias)
 
                 quant_module = get_module(x)
                 out = forward_quant(x.contiguous(), quant_module)
@@ -281,11 +278,9 @@ def float_quantize(x, exp, man, bias=0, rounding="stochastic"):
     """
     assert isinstance(x, torch.Tensor), "x is not a single precision Floating Point Tensor"
     assert rounding in ["stochastic", "nearest"], "invalid rounding mode, {}".format(rounding)
-    if bias != 0:
-        x = torch.mul(x, 2 ** bias)
     quant_module = get_module(x)
     if rounding == "nearest":
-        out = quant_module.float_quantize_nearest(x.contiguous(), man, exp)
+        out = quant_module.float_quantize_nearest(x.contiguous(), man, exp, bias)
     elif rounding == "stochastic":
-        out = quant_module.float_quantize_stochastic(x.contiguous(), man, exp)
+        out = quant_module.float_quantize_stochastic(x.contiguous(), man, bias)
     return out

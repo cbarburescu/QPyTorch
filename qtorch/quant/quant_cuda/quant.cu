@@ -96,7 +96,7 @@ Tensor block_quantize_sim_nearest_cuda(Tensor a, int wl) {
   return o;
 }
 
-Tensor float_quantize_stochastic_cuda(Tensor a, int man_bits, int exp_bits) {
+Tensor float_quantize_stochastic_cuda(Tensor a, int man_bits, int exp_bits, int bias_bits) {
   // use external random number right now
   auto o = zeros_like(a);
   auto rand_ints = randint_like(a, INT_MAX, device(kCUDA).dtype(kInt));
@@ -109,11 +109,12 @@ Tensor float_quantize_stochastic_cuda(Tensor a, int man_bits, int exp_bits) {
                                                     o.data_ptr<float>(),
                                                     size,
                                                     man_bits,
-                                                    exp_bits);
+                                                    exp_bits,
+                                                    bias_bits);
   return o;
 }
 
-Tensor float_quantize_nearest_cuda(Tensor a, int man_bits, int exp_bits) {
+Tensor float_quantize_nearest_cuda(Tensor a, int man_bits, int exp_bits, int bias_bits) {
   // use external random number right now
   auto o = zeros_like(a);
   int size = a.numel();
@@ -124,7 +125,8 @@ Tensor float_quantize_nearest_cuda(Tensor a, int man_bits, int exp_bits) {
                                                  o.data_ptr<float>(),
                                                  size,
                                                  man_bits,
-                                                 exp_bits);
+                                                 exp_bits,
+                                                 bias_bits);
   return o;
 }
 

@@ -245,7 +245,7 @@ Tensor block_quantize_stochastic(Tensor a, int wl, int dim)
   return o;
 }
 
-Tensor float_quantize_stochastic(Tensor a, int man_bits, int exp_bits)
+Tensor float_quantize_stochastic(Tensor a, int man_bits, int exp_bits, int bias_bits)
 {
   // use external random number right now
   auto a_array = a.data_ptr<float>();
@@ -258,7 +258,7 @@ Tensor float_quantize_stochastic(Tensor a, int man_bits, int exp_bits)
     unsigned int target;
     FLOAT_TO_BITS(a_array[i], target);
     unsigned int quantize_bits = round_bitwise(target, man_bits, rStochastic);
-    quantize_bits = clip_exponent(exp_bits, man_bits, target, quantize_bits);
+    quantize_bits = clip_exponent(exp_bits, bias_bits, man_bits, target, quantize_bits);
     float quantized;
     BITS_TO_FLOAT(quantize_bits, quantized);
     o_array[i] = quantized;
@@ -266,7 +266,7 @@ Tensor float_quantize_stochastic(Tensor a, int man_bits, int exp_bits)
   return o;
 }
 
-Tensor float_quantize_nearest(Tensor a, int man_bits, int exp_bits)
+Tensor float_quantize_nearest(Tensor a, int man_bits, int exp_bits, int bias_bits)
 {
   auto a_array = a.data_ptr<float>();
   auto o = zeros_like(a);
@@ -278,7 +278,7 @@ Tensor float_quantize_nearest(Tensor a, int man_bits, int exp_bits)
     unsigned int target;
     FLOAT_TO_BITS(a_array[i], target);
     unsigned int quantize_bits = round_bitwise(target, man_bits, rNearest);
-    quantize_bits = clip_exponent(exp_bits, man_bits, target, quantize_bits);
+    quantize_bits = clip_exponent(exp_bits, bias_bits, man_bits, target, quantize_bits);
     float quantized;
     BITS_TO_FLOAT(quantize_bits, quantized);
     o_array[i] = quantized;

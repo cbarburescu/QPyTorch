@@ -1,22 +1,24 @@
 import argparse
+import datetime
+import json
 import os
 import sys
 import time
-import json
+
+import numpy as np
+import tabulate
 import torch
 import torch.nn.functional as F
-import utils
-import tabulate
-import models
-from data import get_data
-import numpy as np
-from tensorboardX import SummaryWriter
-from qtorch.auto_low import lower
-from qtorch.optim import OptimLP
-from torch.optim.lr_scheduler import LambdaLR
 from torch.optim import SGD
+from torch.optim.lr_scheduler import LambdaLR
+from torch.utils.tensorboard import SummaryWriter
+
+import models
+import utils
+from data import get_data
 from qtorch import BlockFloatingPoint, FixedPoint, FloatingPoint
-from qtorch.quant import quantizer, Quantizer
+from qtorch.optim import OptimLP
+from qtorch.quant import Quantizer, quantizer
 
 num_types = ["weight", "activate", "grad", "error", "momentum", "acc"]
 
@@ -49,17 +51,17 @@ parser.add_argument(
 parser.add_argument(
     "--num_workers",
     type=int,
-    default=4,
+    default=os.cpu_count,
     metavar="N",
-    help="number of workers (default: 4)",
+    help="number of workers (default: num cores of cpu)",
 )
 parser.add_argument(
     "--model",
     type=str,
-    default=None,
+    default="nostradamus",
     required=True,
     metavar="MODEL",
-    help="model name (default: None)",
+    help="model name (default: nostradamus)",
 )
 parser.add_argument(
     "--resume",
@@ -121,11 +123,15 @@ for num in num_types:
     )
 
 args = parser.parse_args()
-
+print('Start Tensorboard with "tensorboard --logdir=runs", view at http://localhost:6006/')
+tb_writer = SummaryWriter(
+    log_dir=f'runs/{datetime.datetime.now().strftime(r"%m-%d_%H:%M:%S")}__{args.model}')
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
 # Select quantizer
+
+
 def quant_summary(man=-1, exp=-1):
     return "float-e{}-m{}".format(man, exp)
 
@@ -145,21 +151,25 @@ for num in num_types:
     num_exp = getattr(args, "{}_exp".format(num))
     number = FloatingPoint(exp=num_exp, man=num_man)
     print("{}: {} rounding, {}".format(num, num_rounding, number))
-    quantizers[num] = quantizer(forward_number=number, forward_rounding=num_rounding)
+    quantizers[num] = quantizer(
+        forward_number=number, forward_rounding=num_rounding)
 # Build model
 print("Model: {}".format(args.model))
 model_cfg = getattr(models, args.model)
 if "LP" in args.model:
-    activate_number = FloatingPoint(exp=args.activate_exp, man=args.activate_man)
+    activate_number = FloatingPoint(
+        exp=args.activate_exp, man=args.activate_man)
     error_number = FloatingPoint(exp=args.error_exp, man=args.error_man)
     print("activation: {}, {}".format(args.activate_rounding, activate_number))
     print("error: {}, {}".format(args.error_rounding, error_number))
-    make_quant = lambda: Quantizer(
+
+    def make_quant(): return Quantizer(
         activate_number, error_number, args.activate_rounding, args.error_rounding
     )
     model_cfg.kwargs.update({"quant": make_quant})
 
-model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
+model = model_cfg.base(
+    *model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
 model.cuda()
 
 criterion = F.cross_entropy
@@ -191,13 +201,14 @@ def schedule(epoch):
 
 scheduler = LambdaLR(optimizer, lr_lambda=[schedule])
 # Prepare logging
-columns = ["ep", "lr", "tr_loss", "tr_acc", "tr_time", "te_loss", "te_acc", "te_time"]
+columns = ["ep", "lr", "tr_loss", "tr_acc",
+           "tr_time", "te_loss", "te_acc", "te_time"]
 
 
-def get_result(loaders, model, phase):
+def get_result(loaders, model, phase, tb_writer=None, epoch=None):
     time_ep = time.time()
     res = utils.run_epoch(
-        loaders[phase], model, criterion, optimizer=optimizer, phase=phase
+        loaders[phase], model, criterion, optimizer=optimizer, phase=phase, tb_writer=tb_writer, epoch=epoch
     )
     time_pass = time.time() - time_ep
     res["time_pass"] = time_pass
@@ -208,7 +219,7 @@ for epoch in range(args.epochs):
 
     scheduler.step()
     time_ep = time.time()
-    train_res = get_result(loaders, model, "train")
+    train_res = get_result(loaders, model, "train", tb_writer, epoch)
 
     if epoch == 0 or epoch % 5 == 4 or epoch == args.epochs - 1:
         test_res = get_result(loaders, model, "test")

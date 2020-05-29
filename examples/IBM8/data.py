@@ -32,21 +32,22 @@ def get_data(dataset, data_path, batch_size, val_ratio, num_workers):
                 ),
             ]
         )
-        train_set = ds(path, train=True, download=True, transform=transform_train)
+        train_set = ds(path, train=True, download=True,
+                       transform=transform_train)
         val_set = ds(path, train=True, download=True, transform=transform_test)
-        test_set = ds(path, train=False, download=True, transform=transform_test)
+        test_set = ds(path, train=False, download=True,
+                      transform=transform_test)
         train_sampler = None
         val_sampler = None
         num_classes = 10
     elif dataset == "IMAGENET12":
-        traindir = os.path.join(data_path, dataset.lower(), "train")
-        valdir = os.path.join(data_path, dataset.lower(), "val")
         normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
-        train_set = datasets.ImageFolder(
-            traindir,
-            transforms.Compose(
+        train_set = datasets.ImageNet(
+            data_path,
+            split='train',
+            transform=transforms.Compose(
                 [
                     transforms.RandomResizedCrop(224),
                     transforms.RandomHorizontalFlip(),
@@ -56,8 +57,9 @@ def get_data(dataset, data_path, batch_size, val_ratio, num_workers):
             ),
         )
         test_set = datasets.ImageFolder(
-            valdir,
-            transforms.Compose(
+            data_path,
+            split='val',
+            transform=transforms.Compose(
                 [
                     transforms.Resize(256),
                     transforms.CenterCrop(224),

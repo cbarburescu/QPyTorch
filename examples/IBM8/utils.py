@@ -20,7 +20,7 @@ def print_table(values, columns, epoch):
     print(table)
 
 
-def run_epoch(loader, model, criterion, optimizer=None, phase="train"):
+def run_epoch(loader, model, criterion, optimizer=None, phase="train", tb_writer=None, epoch=None):
     assert phase in ["train", "val", "test"], "invalid running phase"
     loss_sum = 0.0
     correct = 0.0
@@ -32,6 +32,10 @@ def run_epoch(loader, model, criterion, optimizer=None, phase="train"):
 
     ttl = 0
     with torch.autograd.set_grad_enabled(phase == "train"):
+        if tb_writer is not None and epoch is not None:
+            for name, param in model.named_parameters():
+                tb_writer.add_histogram(f"{name}_{phase}", param, epoch)
+
         for i, (input, target) in enumerate(loader):
             input = input.cuda()
             target = target.cuda()
