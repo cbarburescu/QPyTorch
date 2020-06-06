@@ -153,7 +153,6 @@ def _get_return_sequential_lower_func(quant, layer_types=[], except_layers=[]):
     def _insert_LP_layer(module):
         """Insert quant layer for all layers so long as in layer_types
         """
-
         if type(module) in SEQUENTIAL_LAYERS:
             for i, sub_module in enumerate(module.children()):
                 if i not in except_layers:

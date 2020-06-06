@@ -80,8 +80,8 @@ class OptimLP(Optimizer):
                 grad_scaling = 1 / loss_scale
             for group in self.param_groups:
                 for p in group["params"]:
-                    # p.grad.data = self.grad_quant(p.grad.data * grad_scaling)
-                    p.grad.data = self.grad_quant(p.grad.data) * grad_scaling
+                    p.grad.data = self.grad_quant(p.grad.data * grad_scaling)
+                    # p.grad.data = self.grad_quant(p.grad.data) * grad_scaling
 
         # switch acc into weight before stepping
         if not self.acc_quant is None:
